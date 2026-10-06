@@ -1,0 +1,117 @@
+services:
+  web:
+    image: nginx
+    environment:
+      TZ: Asia/Tokyo
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - 80:80
+    restart: always
+
+  db:
+    build:
+      context: ./postgres
+    image: postgres_jp
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_passwd
+      TZ: Asia/Tokyo
+      PGTZ: Asia/tokyo
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ./postgres/initdb:/docker-entrypoint-initdb.d
+    secrets:
+      - postgres_passwd
+    restart: always
+
+  adminer:
+    image: adminer
+    environment:
+      TZ: Asia/Tokyo
+    restart: always
+
+  file:
+    image: filebrowser/filebrowser
+    environment:
+      TZ: Asia/Tokyo
+    volumes:
+      - file_data:/srv
+      - file_database:/database
+      - ./filebrowser:/config
+    restart: always
+
+  redmine:
+    build:
+      context: ./redmine
+    image: redmine_custom
+    environment:
+      REDMINE_DB_POSTGRES: db
+      REDMINE_DB_DATABASE: redmine
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD_FILE: /run/secrets/redmine_passwd
+      REDMINE_SECRET_KEY_BASE: /run/secrets/redmine_key_base
+      RAILS_RELATIVE_URL_ROOT: /redmine
+      TZ: Asia/Tokyo
+    volumes:
+      - redmine_data:/usr/src/redmine/files
+      - ./redmine/config.ru:/usr/src/redmine/config.ru
+      - git_data:/gitbucket
+    secrets:
+      - redmine_passwd
+      - redmine_key_base
+    depends_on:
+      - db
+    restart: always
+
+  git:
+    image: gitbucket/gitbucket
+    environment:
+      GITBUCKET_PREFIX: /gitbucket
+      GITBUCKET_MAXFILESIZE: 10485760
+      TZ: Asia/Tokyo
+    volumes:
+      - git_data:/gitbucket
+      - ./gitbucket/database.conf:/root/.gitbucket/database.conf
+    ports:
+      - 3000:8080
+      - 29418:29418
+    depends_on:
+      - db
+    restart: always
+
+  wiki:
+    image: requarks/wiki
+    init: true
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS_FILE: /run/secrets/wiki_passwd
+      DB_NAME: wiki
+      TZ: Asia/Tokyo
+    volumes:
+      - wiki_data:/wiki/data/content
+    secrets:
+      - wiki_passwd
+    depends_on:
+      - db
+    restart: always
+
+secrets:
+  postgres_passwd:
+    file: ./secrets/postgres_passwd.txt
+  redmine_passwd:
+    file: ./secrets/redmine_passwd.txt
+  redmine_key_base:
+    file: ./secrets/redmine_key_base.txt
+  wiki_passwd:
+    file: ./secrets/wiki_passwd.txt
+
+volumes:
+  db_data:
+  file_data:
+  file_database:
+  redmine_data:
+  git_data:
+  wiki_data:
