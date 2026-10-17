@@ -73,7 +73,7 @@ services:
       REDMINE_DB_DATABASE: redmine
       TZ: Asia/Tokyo
     ports:
-      - 8080:3000
+      - 3000:3000
     volumes:
       - redmine_data:/usr/src/redmine/files
     depends_on:
@@ -91,7 +91,8 @@ services:
     volumes:
       - git_data:/gitbucket
     ports:
-      - 8081:8080
+      - 8080:8080
+      - 29418:29418
     depends_on:
       - db_git
     restart: unless-stopped
@@ -104,7 +105,7 @@ services:
       - ./filebrowser/folder:/folder
       - ./filebrowser/data:/home/filebrowser/data
     ports:
-      - 8082:80
+      - 5000:80
     restart: unless-stopped
 
 volumes:
