@@ -76,6 +76,7 @@ services:
       - 3000:3000
     volumes:
       - redmine_data:/usr/src/redmine/files
+      - git_data:/gitbucket
     depends_on:
       - db_redmine
     restart: unless-stopped
